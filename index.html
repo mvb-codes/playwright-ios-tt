@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Date of Birth Input</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      .form-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 40px 48px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        width: 380px;
+      }
+
+      .form-card h2 {
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: #212121;
+        margin-bottom: 24px;
+      }
+
+      /* MUI OutlinedInput replica */
+      .MuiFormControl-root {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        position: relative;
+      }
+
+      .MuiInputLabel-root {
+        font-size: 1rem;
+        color: rgba(0, 0, 0, 0.6);
+        position: absolute;
+        top: -9px;
+        left: 14px;
+        background: #fff;
+        padding: 0 4px;
+        font-size: 0.75rem;
+        line-height: 1.4375em;
+        transform-origin: top left;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .MuiInputLabel-root.required::after {
+        content: " *";
+        color: #d32f2f;
+      }
+
+      .MuiOutlinedInput-root {
+        position: relative;
+        border-radius: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.23);
+        transition: border-color 0.2s;
+        background: transparent;
+      }
+
+      .MuiOutlinedInput-root:hover {
+        border-color: rgba(0, 0, 0, 0.87);
+      }
+
+      .MuiOutlinedInput-root:focus-within {
+        border: 2px solid #1976d2;
+      }
+
+      .MuiOutlinedInput-root:focus-within .MuiInputLabel-root {
+        color: #1976d2;
+      }
+
+      .MuiInputBase-input.MuiOutlinedInput-input.css-1yesr0p {
+        font: inherit;
+        font-size: 1rem;
+        color: rgba(0, 0, 0, 0.87);
+        letter-spacing: inherit;
+        border: none;
+        outline: none;
+        background: transparent;
+        width: 100%;
+        padding: 16.5px 14px;
+        display: block;
+      }
+
+      .MuiInputBase-input.MuiOutlinedInput-input.css-1yesr0p::placeholder {
+        color: rgba(0, 0, 0, 0.42);
+        opacity: 1;
+      }
+
+      /* aria-invalid="true" state */
+      .MuiOutlinedInput-root.error {
+        border-color: #d32f2f;
+      }
+
+      .MuiOutlinedInput-root.error:focus-within {
+        border: 2px solid #d32f2f;
+      }
+
+      .MuiFormHelperText-root {
+        font-size: 0.75rem;
+        color: rgba(0, 0, 0, 0.6);
+        margin: 4px 14px 0;
+      }
+
+      .MuiFormHelperText-root.error {
+        color: #d32f2f;
+      }
+
+      .submit-btn {
+        margin-top: 28px;
+        width: 100%;
+        padding: 10px 0;
+        background: #1976d2;
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        letter-spacing: 0.02857em;
+        text-transform: uppercase;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .submit-btn:hover {
+        background: #1565c0;
+      }
+      .submit-btn:active {
+        background: #0d47a1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-card">
+      <h2>Personal Information</h2>
+
+      <div class="MuiFormControl-root">
+        <label class="MuiInputLabel-root required" for=":r4:"
+          >Date of Birth</label
+        >
+        <div class="MuiOutlinedInput-root" id="dob-wrapper">
+          <input
+            aria-invalid="false"
+            id=":r4:"
+            name="dateOfBirth"
+            placeholder="MM/DD/YYYY"
+            required
+            type="text"
+            inputmode="numeric"
+            class="MuiInputBase-input MuiOutlinedInput-input css-1yesr0p"
+            value=""
+            maxlength="10"
+            autocomplete="bday"
+          />
+        </div>
+        <p class="MuiFormHelperText-root" id=":r4:-helper">
+          Enter your date of birth (MM/DD/YYYY)
+        </p>
+      </div>
+
+
+      <button class="submit-btn" type="button" onclick="validate()">
+        Submit
+      </button>
+    </div>
+
+    <script>
+      const input = document.getElementById(":r4:");
+      const wrapper = document.getElementById("dob-wrapper");
+      const helper = document.getElementById(":r4:-helper");
+
+
+      // Auto-insert slashes helper
+      function autoSlash(el) {
+        let v = el.value.replace(/\D/g, "");
+        if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+        if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5, 9);
+        el.value = v;
+      }
+
+      // DOB input listener
+      input.addEventListener("input", function () {
+        autoSlash(this);
+        clearError();
+      });
+
+
+      function clearError() {
+        input.setAttribute("aria-invalid", "false");
+        wrapper.classList.remove("error");
+        helper.classList.remove("error");
+        helper.textContent = "Enter your date of birth (MM/DD/YYYY)";
+      }
+
+
+      function validateField(el, wrapperEl, helperEl, label) {
+        const val = el.value.trim();
+        const pattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/;
+        if (!pattern.test(val)) {
+          el.setAttribute("aria-invalid", "true");
+          wrapperEl.classList.add("error");
+          helperEl.classList.add("error");
+          helperEl.textContent = "Please enter a valid date (MM/DD/YYYY).";
+          return false;
+        } else {
+          el.setAttribute("aria-invalid", "false");
+          wrapperEl.classList.remove("error");
+          helperEl.classList.remove("error");
+          helperEl.textContent = "✓ " + label + " accepted: " + val;
+          return true;
+        }
+      }
+
+      function validate() {
+        const dobValid = validateField(input, wrapper, helper, "Date");
+        if (dobValid) {
+          document.querySelector(".form-card").innerHTML = `
+            <div style="text-align:center;padding:20px 0;">
+              <div style="font-size:3rem;margin-bottom:16px;">✅</div>
+              <h2 style="font-size:1.25rem;font-weight:500;color:#212121;margin-bottom:8px;">Submission Successful</h2>
+              <p style="font-size:0.9rem;color:rgba(0,0,0,0.6);">Your information has been submitted successfully.</p>
+            </div>
+          `;
+        }
+      }
+    </script>
+  </body>
+</html>

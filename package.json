@@ -1,0 +1,20 @@
+{
+  "name": "playwrite-debug",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:bs": "browserstack-node-sdk playwright test",
+    "serve": "serve . -p 3000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "browserstack-node-sdk": "^1.63.3",
+    "serve": "^14.2.6"
+  }
+}
