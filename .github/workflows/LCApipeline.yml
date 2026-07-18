@@ -13,7 +13,7 @@ jobs:
         id: trigger_test_suite
         run: |
           # Added -s flag to prevent curl progress meters from corrupting the JSON
-          response=$(curl -s -u ${{ secrets.BS_USERNAME }}:${{ secrets.BS_ACCESS_KEY }} -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/${TEST_SUITE_ID}/run)
+          response=$(curl -s -u ${{ secrets.USERNAME }}:${{ secrets.PASSWORD }} -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/${TEST_SUITE_ID}/run)
           
           # Debug: Print raw response to logs so you can verify the exact JSON keys
           echo "Raw Trigger Response: $response"
@@ -46,7 +46,7 @@ jobs:
               exit 1
             fi
             
-            response=$(curl -s -u ${{ secrets.BS_USERNAME }}:${{ secrets.BS_ACCESS_KEY }} https://lcnc-api.browserstack.com/api/v1/builds/$BUILD_ID/status)
+            response=$(curl -s -u ${{ secrets.USERNAME }}:${{ secrets.PASSWORD }} https://lcnc-api.browserstack.com/api/v1/builds/$BUILD_ID/status)
             
             # Debug: Print raw status response to logs
             echo "Raw Status Response: $response"
