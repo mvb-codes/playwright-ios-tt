@@ -1,0 +1,55 @@
+name: LCA with Local Testing
+on: [workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      LOCAL_IDENTIFIER: ${{ github.run_id }}-${{ github.run_number }}-${{ github.job }}
+    steps:
+      - name: 'BrowserStack Env Setup'
+        uses: browserstack/github-actions/setup-env@master
+        with:
+          username: ${{ secrets.USERNAME }}
+          access-key: ${{ secrets.PASSWORD }}
+          
+      - name: 'BrowserStack Local Tunnel Setup'
+        uses: browserstack/github-actions/setup-local@master
+        with:
+          local-testing: start
+          local-identifier: ${{ env.LOCAL_IDENTIFIER }}
+          
+      - name: Trigger Test Suite
+        id: trigger_test_suite
+        run: |
+          response=$(curl -u ${{ secrets.USERNAME }}:${{ secrets.PASSWORD }} -H "Content-Type: application/json" -X POST -d "{\"local_identifier\": \"${{ env.LOCAL_IDENTIFIER }}\"}" https://lcnc-api.browserstack.com/api/v1/test-suite/${{ secrets.TEST_SUITE_ID }}/run)
+          BUILD_ID=$(echo $response | jq -r '.build_id')
+          
+          # Modern GitHub Actions output syntax
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Build ID: $BUILD_ID"
+          
+      - name: Check Build Status
+        run: |
+          buildStatus=""
+          retryInterval=30
+          
+          # Fetch output from the previous step
+          BUILD_ID=${{ steps.trigger_test_suite.outputs.build_id }}
+          
+          while [[ ("$buildStatus" != "passed" && "$buildStatus" != "failed") ]]; do
+            # Fixed missing -u and typo in secrets parameter
+            response=$(curl -u ${{ secrets.USERNAME }}:${{ secrets.PASSWORD }} -s https://lcnc-api.browserstack.com/api/v1/builds/$BUILD_ID/status)
+            buildStatus=$(echo $response | jq -r '.build_status')
+            sleep $retryInterval
+          done
+          
+          if [[ "$buildStatus" == "passed" ]]; then
+            echo "Build passed"
+            # Add further steps for actions to be taken if build passed
+          elif [[ "$buildStatus" == "failed" ]]; then
+            echo "Build failed"
+            exit 1
+          else
+            echo "Build status unstable"
+            exit 1
+          fi
