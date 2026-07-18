@@ -1,33 +1,73 @@
 name: Test and Deploy
-on: [workflow_dispatch]
+on: [workflow_dispatch] 
+
+env:
+  # Ensure your TEST_SUITE_ID is passed into the environment so bash can read it
+  TEST_SUITE_ID: 19a0f17d0643ebbf414f39fa9ba6ef05c80249d8
+
 jobs:
- build:
-   runs-on: ubuntu-latest
-   steps:
-     - name: Trigger Test Suite
-       id: trigger_test_suite
-       run: |
-         response=$(curl -u manojvbhandare_APrlwx:xzr1F7yKi8dkr3qTGm65 -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/19a0f17d0643ebbf414f39fa9ba6ef05c80249d8/run)
-         BUILD_ID=$(echo $response | jq -r '.build_id')
-         echo "::set-output name=build_id::$BUILD_ID"
-         echo "Build ID: $BUILD_ID"
-     - name: Check Build Status
-       run: |
-         buildStatus=""
-         retryInterval=30
-         BUILD_ID=$
-         while [[ ("$buildStatus" != "passed" && "$buildStatus" != "failed") ]]; do
-           response=$(curl -u manojvbhandare_APrlwx:xzr1F7yKi8dkr3qTGm65 -s https://lcnc-api.browserstack.com/api/v1/builds/$BUILD_ID/status)
-           buildStatus=$(echo $response | jq -r '.build_status')
-           sleep $retryInterval
-         done
-         if [[ "$buildStatus" == "passed" ]]; then
-           echo "Build passed"
-           # Add further steps for actions to be taken if build passed
-         elif [[ "$buildStatus" == "failed" ]]; then
-           echo "Build failed"
-           exit 1
-         else
-           echo "Build status unstable"
-           exit 1
-         fi
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Test Suite
+        id: trigger_test_suite
+        run: |
+          # Added -s flag to prevent curl progress meters from corrupting the JSON
+          response=$(curl -s -u ${{ secrets.BS_USERNAME }}:${{ secrets.BS_ACCESS_KEY }} -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/${TEST_SUITE_ID}/run)
+          
+          # Debug: Print raw response to logs so you can verify the exact JSON keys
+          echo "Raw Trigger Response: $response"
+          
+          BUILD_ID=$(echo "$response" | jq -r '.build_id')
+          
+          if [[ "$BUILD_ID" == "null" || -z "$BUILD_ID" ]]; then
+            echo "Error: BUILD_ID is empty. The API response likely changed or failed. Check the Raw Trigger Response above."
+            exit 1
+          fi
+          
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Build ID: $BUILD_ID"
+          
+      - name: Check Build Status
+        run: |
+          buildStatus=""
+          retryInterval=30
+          maxRetries=30 # Prevents infinite loops (30 retries * 30s = 15 minute timeout)
+          count=0
+          
+          BUILD_ID=${{ steps.trigger_test_suite.outputs.build_id }}
+          echo "Monitoring Build ID: $BUILD_ID"
+          
+          # Expanded the status checks to catch common alternative API responses
+          while [[ ("$buildStatus" != "passed" && "$buildStatus" != "failed" && "$buildStatus" != "completed" && "$buildStatus" != "error") ]]; do
+            
+            if [ $count -ge $maxRetries ]; then
+              echo "Timeout: Build took too long to finish."
+              exit 1
+            fi
+            
+            response=$(curl -s -u ${{ secrets.BS_USERNAME }}:${{ secrets.BS_ACCESS_KEY }} https://lcnc-api.browserstack.com/api/v1/builds/$BUILD_ID/status)
+            
+            # Debug: Print raw status response to logs
+            echo "Raw Status Response: $response"
+            
+            buildStatus=$(echo "$response" | jq -r '.build_status')
+            echo "Current Status: $buildStatus"
+            
+            if [[ "$buildStatus" != "passed" && "$buildStatus" != "failed" && "$buildStatus" != "completed" && "$buildStatus" != "error" ]]; then
+              sleep $retryInterval
+            fi
+            
+            count=$((count+1))
+          done
+          
+          if [[ "$buildStatus" == "passed" || "$buildStatus" == "completed" ]]; then
+            echo "Build passed!"
+            # Add further steps here
+          elif [[ "$buildStatus" == "failed" || "$buildStatus" == "error" ]]; then
+            echo "Build failed in BrowserStack."
+            exit 1
+          else
+            echo "Build ended with unknown status: $buildStatus"
+            exit 1
+          fi
