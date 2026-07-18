@@ -1,0 +1,33 @@
+name: Test and Deploy
+on: [push]
+jobs:
+ build:
+   runs-on: ubuntu-latest
+   steps:
+     - name: Trigger Test Suite
+       id: trigger_test_suite
+       run: |
+         response=$(curl -u manojvbhandare_APrlwx:xzr1F7yKi8dkr3qTGm65 -X POST https://lcnc-api.browserstack.com/api/v1/test-suite/19a0f17d0643ebbf414f39fa9ba6ef05c80249d8/run)
+         BUILD_ID=$(echo $response | jq -r '.build_id')
+         echo "::set-output name=build_id::$BUILD_ID"
+         echo "Build ID: $BUILD_ID"
+     - name: Check Build Status
+       run: |
+         buildStatus=""
+         retryInterval=30
+         BUILD_ID=$
+         while [[ ("$buildStatus" != "passed" && "$buildStatus" != "failed") ]]; do
+           response=$(curl -u manojvbhandare_APrlwx:xzr1F7yKi8dkr3qTGm65 -s https://lcnc-api.browserstack.com/api/v1/builds/$BUILD_ID/status)
+           buildStatus=$(echo $response | jq -r '.build_status')
+           sleep $retryInterval
+         done
+         if [[ "$buildStatus" == "passed" ]]; then
+           echo "Build passed"
+           # Add further steps for actions to be taken if build passed
+         elif [[ "$buildStatus" == "failed" ]]; then
+           echo "Build failed"
+           exit 1
+         else
+           echo "Build status unstable"
+           exit 1
+         fi
